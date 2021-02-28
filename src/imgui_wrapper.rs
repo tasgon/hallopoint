@@ -24,10 +24,11 @@ pub struct ImGuiWrapper {
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
     mouse_state: MouseState,
+    hidpi_factor: f32,
 }
 
 impl ImGuiWrapper {
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context, hidpi_factor: f32) -> Self {
         // Create the imgui object
         let mut imgui = imgui::Context::create();
         let (factory, gfx_device, _, _, _) = graphics::gfx_objects(ctx);
@@ -85,10 +86,11 @@ impl ImGuiWrapper {
             renderer,
             last_frame: Instant::now(),
             mouse_state: MouseState::default(),
+            hidpi_factor,
         }
     }
 
-    pub fn render(&mut self, ctx: &mut Context, hidpi_factor: f32, mut ui_fn: impl FnMut(&Ui)) {
+    pub fn render(&mut self, ctx: &mut Context, mut ui_fn: impl FnMut(&Ui)) {
         // Update mouse
         self.update_mouse();
 
@@ -99,9 +101,8 @@ impl ImGuiWrapper {
         self.last_frame = now;
 
         let (draw_width, draw_height) = graphics::drawable_size(ctx);
-        println!("width: {}", draw_width);
         self.imgui.io_mut().display_size = [draw_width, draw_height];
-        self.imgui.io_mut().display_framebuffer_scale = [hidpi_factor, hidpi_factor];
+        self.imgui.io_mut().display_framebuffer_scale = [self.hidpi_factor, self.hidpi_factor];
         self.imgui.io_mut().delta_time = delta_s;
 
         let mut ui = self.imgui.frame();
@@ -141,11 +142,8 @@ impl ImGuiWrapper {
     }
 
     pub fn update_mouse_pos(&mut self, mut x: f32, mut y: f32) {
-        #[cfg(target_os = "macos")]
-        {
-            x /= 2f32;
-            y /= 2f32;
-        }
+        x /= self.hidpi_factor;
+        y /= self.hidpi_factor;
         self.mouse_state.pos = (x as i32, y as i32);
     }
 

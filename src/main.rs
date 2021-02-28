@@ -2,14 +2,11 @@ extern crate ggez;
 
 mod imgui_wrapper;
 
-use std::slice::Windows;
-
 use crate::imgui_wrapper::ImGuiWrapper;
 use ggez::conf;
+use ggez::event::winit_event::{Force, Touch, WindowEvent};
 use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::graphics;
-use ggez::mint;
-//use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 
 use imgui::im_str;
@@ -17,16 +14,18 @@ use imgui::im_str;
 struct MainState {
     pos_x: f32,
     imgui_wrapper: ImGuiWrapper,
-    hidpi_factor: f32,
+    last_touch: Option<Touch>,
+    last_force: f32,
 }
 
 impl MainState {
     fn new(mut ctx: &mut Context, hidpi_factor: f32) -> GameResult<MainState> {
-        let imgui_wrapper = ImGuiWrapper::new(&mut ctx);
+        let imgui_wrapper = ImGuiWrapper::new(&mut ctx, hidpi_factor);
         let s = MainState {
             pos_x: 0.0,
             imgui_wrapper,
-            hidpi_factor,
+            last_touch: None,
+            last_force: 0.0f32,
         };
         Ok(s)
     }
@@ -54,12 +53,16 @@ impl EventHandler for MainState {
             graphics::draw(ctx, &circle, ([0.0, 0.0],))?;
         }
 
+        let touch = self.last_touch;
+
         // Render game ui
         {
-            self.imgui_wrapper.render(ctx, self.hidpi_factor, |ui| {
+            self.imgui_wrapper.render(ctx, |ui| {
                 ui.show_demo_window(&mut true);
-                imgui::Window::new(im_str!("Main"))
-                    .build(ui, || if ui.small_button(im_str!("Open song")) {});
+                imgui::Window::new(im_str!("Main")).build(ui, || {
+                    if ui.small_button(im_str!("Open song")) {}
+                    ui.text(im_str!("{:?}", touch));
+                });
             });
         }
 
@@ -116,6 +119,26 @@ impl EventHandler for MainState {
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
         self.imgui_wrapper.update_scroll(x, y);
     }
+
+    fn winit_event(&mut self, _ctx: &mut Context, event: WindowEvent) {
+        if let WindowEvent::Touch(tev) = event {
+            let pos = tev.location;
+            let force = tev.force.map_or(0.0f32, |f| match f {
+                Force::Normalized(n) => n as f32,
+                _ => 0.0f32,
+            });
+            let x = pos.x as f32;
+            let y = pos.y as f32;
+            self.last_touch = Some(tev);
+            self.mouse_motion_event(_ctx, x, y, 0f32, 0f32);
+            if self.last_force < 0.1f32 && force > 0.1f32 {
+                self.mouse_button_down_event(_ctx, MouseButton::Left, x, y);
+            } else if self.last_force > 0.1f32 && force < 0.1f32 {
+                self.mouse_button_up_event(_ctx, MouseButton::Left, x, y);
+            }
+            self.last_force = force;
+        }
+    }
 }
 
 pub fn main() -> ggez::GameResult {
@@ -127,8 +150,6 @@ pub fn main() -> ggez::GameResult {
     let (mut ctx, event_loop) = cb.build()?;
 
     let hidpi_factor = event_loop.primary_monitor().unwrap().scale_factor() as f32;
-    //let hidpi_factor = 1.0f32;
-    println!("main hidpi_factor = {}", hidpi_factor);
 
     let state = MainState::new(&mut ctx, hidpi_factor)?;
 
