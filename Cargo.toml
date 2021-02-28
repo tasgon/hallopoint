@@ -1,14 +1,17 @@
 [package]
-name = "imgui-ggez-starter"
+name = "hallopoint"
 version = "0.1.0"
-authors = ["oliviaifrim"]
+authors = ["tasgon"]
 edition = "2018"
 
 [dependencies]
-ggez = "0.5.1"
+ggez = "0.6.0-rc1"
 
-gfx_core = "0.9.2"
-gfx_device_gl = "0.16.2"
+gfx_core = "0.9"
+gfx_device_gl = "0.16"
 
-imgui = "0.4"
-imgui-gfx-renderer = "0.4"
+imgui = "0.7"
+imgui-gfx-renderer = "0.7"
+
+image = "0.23"
+nfd2 = "0.2"
