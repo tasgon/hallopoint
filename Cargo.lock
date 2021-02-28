@@ -1140,7 +1140,7 @@ dependencies = [
  "image",
  "imgui",
  "imgui-gfx-renderer",
- "nfd2",
+ "num-traits",
 ]
 
 [[package]]
@@ -1685,15 +1685,6 @@ dependencies = [
  "cfg-if 0.1.10",
  "libc",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "nfd2"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cedbdc1ecacd67f890b05bf38d268cf42dd070a4b44e82b89c4757998e7250d5"
-dependencies = [
- "cc",
 ]
 
 [[package]]

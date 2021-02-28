@@ -1,18 +1,20 @@
 extern crate ggez;
 
+mod drawing_canvas;
 mod imgui_wrapper;
 
 use crate::imgui_wrapper::ImGuiWrapper;
-use ggez::conf;
+use drawing_canvas::DrawingCanvas;
 use ggez::event::winit_event::{Force, Touch, WindowEvent};
 use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::graphics;
+use ggez::{conf, mint::Point2};
 use ggez::{Context, GameResult};
 
 use imgui::im_str;
 
 struct MainState {
-    pos_x: f32,
+    board: DrawingCanvas,
     imgui_wrapper: ImGuiWrapper,
     last_touch: Option<Touch>,
     last_force: f32,
@@ -22,7 +24,7 @@ impl MainState {
     fn new(mut ctx: &mut Context, hidpi_factor: f32) -> GameResult<MainState> {
         let imgui_wrapper = ImGuiWrapper::new(&mut ctx, hidpi_factor);
         let s = MainState {
-            pos_x: 0.0,
+            board: DrawingCanvas::new(ctx),
             imgui_wrapper,
             last_touch: None,
             last_force: 0.0f32,
@@ -42,15 +44,8 @@ impl EventHandler for MainState {
 
         // Render game stuff
         {
-            let circle = graphics::Mesh::new_circle(
-                ctx,
-                graphics::DrawMode::fill(),
-                [self.pos_x, 380.0f32],
-                100.0,
-                2.0,
-                graphics::Color::WHITE,
-            )?;
-            graphics::draw(ctx, &circle, ([0.0, 0.0],))?;
+            //graphics::draw(ctx, &, ([0.0, 0.0],))?;
+            self.board.draw(ctx, None);
         }
 
         let touch = self.last_touch;
@@ -61,7 +56,9 @@ impl EventHandler for MainState {
                 ui.show_demo_window(&mut true);
                 imgui::Window::new(im_str!("Main")).build(ui, || {
                     if ui.small_button(im_str!("Open song")) {}
-                    ui.text(im_str!("{:?}", touch));
+                    if let Some(t) = touch {
+                        ui.text(im_str!("{:?}\n{:?}", t.location, t.force));
+                    }
                 });
             });
         }
@@ -71,9 +68,6 @@ impl EventHandler for MainState {
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        //let x = x / 2f32;
-        //let y = y / 2f32;
-        self.pos_x = x;
         self.imgui_wrapper.update_mouse_pos(x, y);
     }
 
@@ -112,8 +106,6 @@ impl EventHandler for MainState {
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height))
             .unwrap();
-        println!("{}", width);
-        //println!("{:?}", graphics::screen_coordinates(ctx));
     }
 
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
@@ -127,8 +119,21 @@ impl EventHandler for MainState {
                 Force::Normalized(n) => n as f32,
                 _ => 0.0f32,
             });
+
             let x = pos.x as f32;
             let y = pos.y as f32;
+            if force > 0.1f32 {
+                self.board.stroke(
+                    self.last_touch.map(|t| Point2 {
+                        x: t.location.x as f32,
+                        y: t.location.y as f32,
+                    }),
+                    Point2 { x, y },
+                    force,
+                    _ctx,
+                );
+            }
+
             self.last_touch = Some(tev);
             self.mouse_motion_event(_ctx, x, y, 0f32, 0f32);
             if self.last_force < 0.1f32 && force > 0.1f32 {
@@ -150,6 +155,7 @@ pub fn main() -> ggez::GameResult {
     let (mut ctx, event_loop) = cb.build()?;
 
     let hidpi_factor = event_loop.primary_monitor().unwrap().scale_factor() as f32;
+    println!("dpi: {}", hidpi_factor);
 
     let state = MainState::new(&mut ctx, hidpi_factor)?;
 

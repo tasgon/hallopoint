@@ -14,4 +14,4 @@ imgui = "0.7"
 imgui-gfx-renderer = "0.7"
 
 image = "0.23"
-nfd2 = "0.2"
+num-traits = "0.2"
