@@ -49,18 +49,26 @@ impl EventHandler for MainState {
         }
 
         let touch = self.last_touch;
+        let clear_board = &mut false;
 
         // Render game ui
         {
             self.imgui_wrapper.render(ctx, |ui| {
                 ui.show_demo_window(&mut true);
                 imgui::Window::new(im_str!("Main")).build(ui, || {
-                    if ui.small_button(im_str!("Open song")) {}
+                    if ui.small_button(im_str!("Clear")) {
+                        *clear_board = true;
+                    }
                     if let Some(t) = touch {
                         ui.text(im_str!("{:?}\n{:?}", t.location, t.force));
                     }
                 });
             });
+        }
+
+        if *clear_board {
+            println!("{}", *clear_board);
+            self.board.clear(ctx);
         }
 
         graphics::present(ctx)?;
@@ -112,7 +120,7 @@ impl EventHandler for MainState {
         self.imgui_wrapper.update_scroll(x, y);
     }
 
-    fn winit_event(&mut self, _ctx: &mut Context, event: WindowEvent) {
+    fn winit_event(&mut self, ctx: &mut Context, event: WindowEvent) {
         if let WindowEvent::Touch(tev) = event {
             let pos = tev.location;
             let force = tev.force.map_or(0.0f32, |f| match f {
@@ -130,16 +138,16 @@ impl EventHandler for MainState {
                     }),
                     Point2 { x, y },
                     force,
-                    _ctx,
+                    ctx,
                 );
             }
 
             self.last_touch = Some(tev);
-            self.mouse_motion_event(_ctx, x, y, 0f32, 0f32);
+            self.mouse_motion_event(ctx, x, y, 0f32, 0f32);
             if self.last_force < 0.1f32 && force > 0.1f32 {
-                self.mouse_button_down_event(_ctx, MouseButton::Left, x, y);
+                self.mouse_button_down_event(ctx, MouseButton::Left, x, y);
             } else if self.last_force > 0.1f32 && force < 0.1f32 {
-                self.mouse_button_up_event(_ctx, MouseButton::Left, x, y);
+                self.mouse_button_up_event(ctx, MouseButton::Left, x, y);
             }
             self.last_force = force;
         }
@@ -147,8 +155,8 @@ impl EventHandler for MainState {
 }
 
 pub fn main() -> ggez::GameResult {
-    let cb = ggez::ContextBuilder::new("super_simple with imgui", "ggez")
-        .window_setup(conf::WindowSetup::default().title("super_simple with imgui"))
+    let cb = ggez::ContextBuilder::new("hallopoint", "tasgon")
+        .window_setup(conf::WindowSetup::default().title("Hallopoint"))
         .window_mode(
             conf::WindowMode::default().resizable(true), /*.dimensions(750.0, 500.0)*/
         );

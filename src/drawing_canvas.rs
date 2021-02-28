@@ -23,7 +23,7 @@ impl DrawingCanvas {
         graphics::set_canvas(ctx, None);
         Self {
             canvas,
-            brush_radius: 6.0f32,
+            brush_radius: 3.0f32,
         }
     }
     pub fn stroke(
@@ -34,27 +34,35 @@ impl DrawingCanvas {
         ctx: &mut ggez::Context,
     ) {
         let point = point.into();
+        //point.x *= 1.25f32;
         let color = graphics::Color::new(0.0f32, 0.0f32, 0.0f32, pressure);
         graphics::set_canvas(ctx, Some(&self.canvas));
         let mut mb = MeshBuilder::new();
         if let Some(lp) = last_point.into() {
-            let dx = point.x - lp.x;
-            let dy = point.y - lp.y;
-            if (dx * dx + dy * dy).sqrt() > 4.0f32 {
-                mb.line(&[lp, point], self.brush_radius * 2.0f32, color)
-                    .unwrap();
+            //lp.x *= 1.25f32;
+            /*let dx = point.x - lp.x;
+            let dy = point.y - lp.y;*/
+            if let Err(e) = mb.line(&[lp, point], self.brush_radius * 2.0f32, color) {
+                println!("{:?}", e);
             }
         }
-        mb.circle(
+        /*mb.circle(
             DrawMode::Fill(FillOptions::DEFAULT),
             point,
             self.brush_radius,
             1.0f32,
             color,
         )
-        .unwrap();
-        let mesh = mb.build(ctx).unwrap();
-        graphics::draw(ctx, &mesh, ([0.0, 0.0],)).unwrap();
+        .unwrap();*/
+        if let Ok(mesh) = mb.build(ctx) {
+            graphics::draw(ctx, &mesh, ([0.0, 0.0],)).unwrap();
+        }
+        graphics::set_canvas(ctx, None);
+    }
+
+    pub fn clear(&mut self, ctx: &mut ggez::Context) {
+        graphics::set_canvas(ctx, Some(&self.canvas));
+        graphics::clear(ctx, Color::WHITE);
         graphics::set_canvas(ctx, None);
     }
 
