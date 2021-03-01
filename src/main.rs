@@ -16,7 +16,7 @@ use ggez::{
 };
 use ggez::{Context, GameResult};
 
-use graphics::{Color, FillOptions, StrokeOptions};
+use graphics::{Color, StrokeOptions};
 use imgui::im_str;
 
 struct MainState {

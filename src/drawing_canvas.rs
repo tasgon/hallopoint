@@ -1,10 +1,7 @@
-use ggez::graphics::{Canvas, DrawMode, DrawParam, FillOptions};
+use ggez::graphics;
+use ggez::graphics::{Canvas, DrawParam};
 use ggez::mint::Point2;
-use ggez::{graphics, Context};
-use graphics::{
-    get_window_color_format, screen_coordinates, set_screen_coordinates, size, Color, MeshBuilder,
-    Rect,
-};
+use graphics::{get_window_color_format, Color, MeshBuilder, Rect};
 
 pub struct DrawingCanvas {
     canvas: Canvas,
