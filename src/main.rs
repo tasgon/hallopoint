@@ -3,8 +3,6 @@ extern crate ggez;
 mod drawing_canvas;
 mod imgui_wrapper;
 
-use std::sync::mpsc::channel;
-
 use crate::imgui_wrapper::ImGuiWrapper;
 use drawing_canvas::DrawingCanvas;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
@@ -73,19 +71,13 @@ impl EventHandler for MainState {
         let clear_board = &mut false;
         let mut val = self.board.brush_radius as i32;
 
-        let (sender, receiver) = channel::<Box<dyn FnMut(&mut Context)>>();
-
         // Render game ui
         {
-            self.imgui_wrapper.render(ctx, |ui| {
+            self.imgui_wrapper.render(ctx, |ui, c| {
                 ui.show_demo_window(&mut true);
                 imgui::Window::new(im_str!("Main")).build(ui, || {
                     if ui.small_button(im_str!("Hide cursor")) {
-                        sender
-                            .send(Box::new(|ctx2| {
-                                ggez::input::mouse::set_cursor_hidden(ctx2, true);
-                            }))
-                            .unwrap();
+                        ggez::input::mouse::set_cursor_hidden(c, true);
                     }
                     if let Some(t) = touch {
                         ui.text(im_str!("{:?}\n{:?}", t.location, t.force));
@@ -95,10 +87,6 @@ impl EventHandler for MainState {
                         .build(ui, &mut val);
                 });
             });
-        }
-
-        while let Ok(mut f) = receiver.try_recv() {
-            f(ctx);
         }
 
         self.board.brush_radius = val as f32;
