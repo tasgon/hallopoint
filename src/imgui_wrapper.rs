@@ -90,7 +90,12 @@ impl ImGuiWrapper {
         }
     }
 
-    pub fn render(&mut self, ctx: &mut Context, mut ui_fn: impl FnMut(&Ui, &mut Context)) {
+    pub fn render<T>(
+        &mut self,
+        ctx: &mut Context,
+        data: T,
+        mut ui_fn: impl FnMut(&Ui, &mut Context, T),
+    ) {
         // Update mouse
         self.update_mouse();
 
@@ -107,7 +112,7 @@ impl ImGuiWrapper {
 
         let mut ui = self.imgui.frame();
 
-        ui_fn(&mut ui, ctx);
+        ui_fn(&mut ui, ctx, data);
 
         // Render
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);

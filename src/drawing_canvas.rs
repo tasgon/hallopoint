@@ -5,15 +5,17 @@ use graphics::{get_window_color_format, Color, MeshBuilder, Rect};
 
 pub struct DrawingCanvas {
     canvas: Canvas,
+    width: u16,
+    height: u16,
     pub brush_radius: f32,
 }
 
 impl DrawingCanvas {
-    pub fn new(ctx: &mut ggez::Context) -> Self {
+    pub fn new(ctx: &mut ggez::Context, width: u16, height: u16) -> Self {
         let canvas = Canvas::new(
             ctx,
-            500,
-            500,
+            width,
+            height,
             ggez::conf::NumSamples::One,
             get_window_color_format(ctx),
         )
@@ -23,6 +25,8 @@ impl DrawingCanvas {
         graphics::set_canvas(ctx, None);
         Self {
             canvas,
+            width,
+            height,
             brush_radius: 3.0f32,
         }
     }
@@ -40,11 +44,15 @@ impl DrawingCanvas {
         graphics::set_canvas(ctx, Some(&self.canvas));
 
         // This is abhorrent but `https://github.com/ggez/ggez/issues/497` necessitates it.
-        graphics::set_screen_coordinates(ctx, Rect::new(0f32, 0f32, 500f32, 500f32)).unwrap();
+        graphics::set_screen_coordinates(
+            ctx,
+            Rect::new(0f32, 0f32, self.width as f32, self.height as f32),
+        )
+        .unwrap();
 
         let mut mb = MeshBuilder::new();
         if let Some(lp) = last_point.into() {
-            if let Err(e) = mb.line(&[lp, point], self.brush_radius * 2.0f32, color) {
+            if let Err(e) = mb.line(&[lp, point], self.brush_radius, color) {
                 println!("{:?}", e);
             }
         }

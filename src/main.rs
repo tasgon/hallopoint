@@ -14,7 +14,7 @@ use ggez::{
 };
 use ggez::{Context, GameResult};
 
-use graphics::{Color, StrokeOptions};
+use graphics::{Color, DrawParam, StrokeOptions};
 use imgui::im_str;
 
 struct MainState {
@@ -22,16 +22,18 @@ struct MainState {
     imgui_wrapper: ImGuiWrapper,
     last_touch: Option<Touch>,
     last_force: f32,
+    board_scale: f32,
 }
 
 impl MainState {
     fn new(mut ctx: &mut Context, hidpi_factor: f32) -> GameResult<MainState> {
         let imgui_wrapper = ImGuiWrapper::new(&mut ctx, hidpi_factor);
         let s = MainState {
-            board: DrawingCanvas::new(ctx),
+            board: DrawingCanvas::new(ctx, 25, 25),
             imgui_wrapper,
             last_touch: None,
             last_force: 0.0f32,
+            board_scale: 1.0f32,
         };
         Ok(s)
     }
@@ -48,7 +50,10 @@ impl EventHandler for MainState {
 
         // Render game stuff
         {
-            self.board.draw(ctx, None);
+            self.board.draw(
+                ctx,
+                Some(DrawParam::default().scale([self.board_scale, self.board_scale])),
+            );
             if let Some(t) = self.last_touch {
                 let p = Point2 {
                     x: t.location.x as f32,
@@ -68,33 +73,37 @@ impl EventHandler for MainState {
         }
 
         let touch = self.last_touch;
-        let clear_board = &mut false;
         let mut val = self.board.brush_radius as i32;
 
         // Render game ui
         {
-            self.imgui_wrapper.render(ctx, |ui, c| {
-                ui.show_demo_window(&mut true);
-                imgui::Window::new(im_str!("Main")).build(ui, || {
-                    if ui.small_button(im_str!("Hide cursor")) {
-                        ggez::input::mouse::set_cursor_hidden(c, true);
-                    }
-                    if let Some(t) = touch {
-                        ui.text(im_str!("{:?}\n{:?}", t.location, t.force));
-                    }
-                    imgui::Slider::new(im_str!("Stroke size"))
-                        .range(1..=10)
-                        .build(ui, &mut val);
-                });
-            });
+            self.imgui_wrapper.render(
+                ctx,
+                (&mut self.board, &mut self.board_scale),
+                |ui, c, data| {
+                    let (b, s) = data;
+                    imgui::Window::new(im_str!("Main")).build(ui, || {
+                        if ui.small_button(im_str!("Hide cursor")) {
+                            ggez::input::mouse::set_cursor_hidden(c, true);
+                        }
+                        if ui.small_button(im_str!("Clear")) {
+                            *b = DrawingCanvas::new(c, 25, 25);
+                        }
+                        if let Some(t) = touch {
+                            ui.text(im_str!("{:?}\n{:?}", t.location, t.force));
+                        }
+                        imgui::Drag::new(im_str!("Scale"))
+                            .range(1f32..=10f32)
+                            .build(ui, s);
+                        imgui::Drag::new(im_str!("Stroke size"))
+                            .range(1..=10)
+                            .build(ui, &mut val);
+                    });
+                },
+            );
         }
 
         self.board.brush_radius = val as f32;
-
-        if *clear_board {
-            println!("{}", *clear_board);
-            self.board.clear(ctx);
-        }
 
         graphics::present(ctx)?;
         Ok(())
@@ -137,7 +146,7 @@ impl EventHandler for MainState {
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        self.board = DrawingCanvas::new(ctx);
+        //self.board = DrawingCanvas::new(ctx, 25, 25);
         graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height))
             .unwrap();
     }
@@ -159,10 +168,13 @@ impl EventHandler for MainState {
             if force > 0.1f32 {
                 self.board.stroke(
                     self.last_touch.map(|t| Point2 {
-                        x: t.location.x as f32,
-                        y: t.location.y as f32,
+                        x: t.location.x as f32 / self.board_scale,
+                        y: t.location.y as f32 / self.board_scale,
                     }),
-                    Point2 { x, y },
+                    Point2 {
+                        x: x / self.board_scale,
+                        y: y / self.board_scale,
+                    },
                     force,
                     ctx,
                 );
