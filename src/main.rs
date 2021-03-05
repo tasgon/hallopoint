@@ -92,6 +92,7 @@ impl EventHandler for MainState {
                         if let Some(t) = touch {
                             ui.text(im_str!("{:?}\n{:?}", t.location, t.force));
                         }
+                        ui.checkbox(im_str!("Show grid"), &mut b.grid);
                         imgui::Drag::new(im_str!("Scale"))
                             .range(1f32..=10f32)
                             .build(ui, s);
