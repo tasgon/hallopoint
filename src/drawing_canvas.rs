@@ -1,3 +1,4 @@
+use gfx::gfx_defines;
 use ggez::graphics;
 use ggez::graphics::{Canvas, DrawParam, FilterMode};
 use ggez::mint::Point2;
@@ -5,6 +6,8 @@ use graphics::{
     get_window_color_format, screen_coordinates, set_canvas, set_screen_coordinates, Color,
     MeshBuilder, Rect,
 };
+
+use gfx::{self, *};
 
 // This is abhorrent but `https://github.com/ggez/ggez/issues/497` necessitates it.
 #[inline(always)]
@@ -31,14 +34,23 @@ pub fn with_canvas(
     Ok(())
 }
 
+gfx_defines! {
+    constant Force {
+        force: f32 = "u_Force",
+    }
+}
+
 pub struct DrawingCanvas {
     canvas: Canvas,
+    shader: ggez::graphics::Shader<Force>,
+    force: Force,
     pub brush_radius: f32,
     pub grid: bool,
 }
 
 impl DrawingCanvas {
     pub fn new(ctx: &mut ggez::Context, width: u16, height: u16) -> Self {
+        let force = Force { force: 0.5 };
         let mut canvas = Canvas::new(
             ctx,
             width,
@@ -48,11 +60,18 @@ impl DrawingCanvas {
         )
         .unwrap();
         canvas.set_filter(FilterMode::Nearest);
+
+        let shader =
+            graphics::Shader::new(ctx, "/canvas.glslv", "/canvas.glslf", force, "Force", None)
+                .unwrap();
+
         graphics::set_canvas(ctx, Some(&canvas));
         graphics::clear(ctx, Color::WHITE);
         graphics::set_canvas(ctx, None);
         Self {
             canvas,
+            shader,
+            force,
             brush_radius: 3.0f32,
             grid: false,
         }
@@ -70,10 +89,23 @@ impl DrawingCanvas {
 
         let last_point = last_point.into();
         let radius = self.brush_radius;
+        let shader = &self.shader;
+        self.force.force = pressure;
+        let force = self.force;
 
         with_canvas(ctx, &self.canvas, move |ctx2| {
+            let _lock = ggez::graphics::use_shader(ctx2, shader);
+            shader.send(ctx2, force).unwrap();
             let mut mb = MeshBuilder::new();
             if let Some(lp) = last_point {
+                let lp = Point2 {
+                    x: lp.x.floor(),
+                    y: lp.y.floor(),
+                };
+                let point = Point2 {
+                    x: point.x.ceil(),
+                    y: point.y.ceil(),
+                };
                 if let Err(e) = mb.line(&[lp, point], radius, color) {
                     println!("{:?}", e);
                 }

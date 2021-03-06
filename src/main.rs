@@ -41,7 +41,6 @@ impl MainState {
 
 impl EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        //self.pos_x = self.pos_x % 800.0 + 1.0;
         Ok(())
     }
 
@@ -94,12 +93,13 @@ impl EventHandler for MainState {
                         }
                         ui.checkbox(im_str!("Show grid"), &mut b.grid);
                         imgui::Drag::new(im_str!("Scale"))
-                            .range(1f32..=10f32)
+                            .range(1f32..=20f32)
                             .build(ui, s);
                         imgui::Drag::new(im_str!("Stroke size"))
                             .range(1..=10)
                             .build(ui, &mut val);
                     });
+                    *s = s.max(1.0f32);
                 },
             );
         }
@@ -195,6 +195,7 @@ impl EventHandler for MainState {
 
 pub fn main() -> ggez::GameResult {
     let cb = ggez::ContextBuilder::new("hallopoint", "tasgon")
+        .add_resource_path("./src/gl")
         .window_setup(conf::WindowSetup::default().title("Hallopoint"))
         .window_mode(
             conf::WindowMode::default().resizable(true), /*.dimensions(750.0, 500.0)*/

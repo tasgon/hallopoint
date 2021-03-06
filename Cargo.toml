@@ -15,3 +15,8 @@ imgui-gfx-renderer = "0.7"
 
 image = "0.23"
 num-traits = "0.2"
+
+gfx = "0.18"
+
+[patch.crates-io]
+winit = { path = "../winit/" }
